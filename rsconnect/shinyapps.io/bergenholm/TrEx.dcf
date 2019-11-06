@@ -5,9 +5,9 @@ account: bergenholm
 server: shinyapps.io
 hostUrl: https://api.shinyapps.io/v1
 appId: 1011892
-bundleId: 2567896
+bundleId: 2568523
 url: https://bergenholm.shinyapps.io/TrEx/
-when: 1573032611.21209
+when: 1573051483.74252
 asMultiple: FALSE
 asStatic: FALSE
 ignoredFiles: T-rEx Documentation.docx

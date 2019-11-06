@@ -197,7 +197,7 @@ Stat_plot_func<-function(val1,downloadVal,conditionname,goterm,name.TF,Test,New.
 goterm_func <- function(datain) {
   ####Locates the GO-terms included in the users searchterm
   pathways.name<-datain
-  pathways.go <- filter(go_bio, grepl(paste(pathways.name, collapse="|"),name_1006))
+  pathways.go <- filter(gogenes, grepl(paste(pathways.name, collapse="|"),name_1006))
   
   pathways.gene<-data.frame(unique(pathways.go$ensembl_gene_id))
   colnames(pathways.gene)<-"Gene"
@@ -1056,14 +1056,14 @@ function(input, output) {
       return(p2)}else{return(data.frame("Error: Select TFs"))}
     }else{
     pathways.name<-unlist(strsplit(tolower(input$goterm), "[+]"))
-    pathways.go <- filter(go_bio, grepl(paste(pathways.name, collapse="|"),name_1006))
+    pathways.go <- filter(gogenes, grepl(paste(pathways.name, collapse="|"),name_1006))
     pathways.go1<-data.frame(unique(pathways.go$name_1006))
     colnames(pathways.go1)<-"GO-terms"
     return(pathways.go1)}
   }, options=list(pageLength=5))
   output$TestInput<-renderUI({
     if(input$test=="Fisher"){
-      textOut<-("The Fisher test is based on the occurrence of one transcription factor at the same gene as another transcription factor. The probability is plotted in a heatmap where * denotes p<0.001")
+      textOut<-("The Fisher test is based on the occurrence of one transcription factor at the same gene as another transcription factor. The probability is plotted in a heatmap where * denotes p<0.001. The presence of a blue box indicate shared targets, while an absence of a blue box indicates no targets.")
     }
     if(input$test=="Heatmap"){
       textOut<-("Generates a heatmap of the selected genes where the total number of binding sites are normalized to 1")
