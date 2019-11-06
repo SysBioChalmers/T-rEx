@@ -5,11 +5,11 @@
 # Chalmers University of Technology
 # Department of Biology and Bioengineering
 
-#Set up the colors, conditions and the TFs used
+#Set up the TFs, colors and the conditions used
+name.TF<-c("Abf1","Cat8","Cbf1","Cst6","Ert1","Gcn4","Gcr1","Gcr2","Hap1","Hap4","Ino2","Ino4","Leu3","Mcm1","Oaf1","Pip2","Rap1","Rds2","Reb1","Rgt1","Rtg1","Rtg3","Sip4","Stb5","Sut1","Tye7")
 #For each new TF added a new color must be set and added in rinputs
-myColors.TF<-c("#a6cee3","#1f78b4","#ff9c63","#f16913","#b2df8a","#ffe60c","#33a02c","#3ab4f4","#5200aa","#e31a1c","#fdbf6f","#ff7f00","#115e0c","#cab2d6","#7fcdbb","#6a3d9a","#b0b227","#e20002","#dd3497","#b15928")
-name.TF<-c("Cat8","Cbf1","Ert1","Gcn4","Gcr1","Gcr2","Hap1","Ino2","Ino4","Leu3","Oaf1","Pip2","Rds2","Rgt1","Rtg1","Rtg3","Sip4","Stb5","Sut1","Tye7")
-name.Cond<-c("Glu","Nit","Eth","Ana")
+myColors.TF<-c("#a6cee3","#1f78b4","#244282","#ff9c63","#e2df9a","#f16913","#b2df8a","#ffe60c","#33a02c","#3b5998" ,"#fe7f10","#3c2918","#3ab4f4","#5200aa","#e31a1c","#fdbf6f","#ff7f00","#115e0c","#cab2d6","#7fcdbb","#d5dc8a","#6a3d9a","#b0b227","#e20002","#dd3497","#b15928")
+name.Cond<-c("Glu","Nit","Eth","Ana","Ypd")
 colorset.TF<-as.character(t(myColors.TF))
 names(colorset.TF)<-as.character(t(name.TF))
 #Make TF list
@@ -30,16 +30,16 @@ gene.Common<-data.frame(geneList[,2])
 colnames(gene.Common)<-c("GeneC")
 
 #Load metabolic genes from Yeast8
-metabolicgenes <-tryCatch({read.csv(paste("TF_data_files/Resources/","Yeast8_genes.csv",sep=""),sep=";", header=TRUE)},
+Yeast8 <-tryCatch({read.csv(paste("TF_data_files/Resources/","Yeast8_genes.csv",sep=""),sep=";", header=TRUE)},
                     error=function(file){
                       dummyvec<-data.frame(t(rep(NA, 1)))
                       colnames(dummyvec)<-c("Gene")
                       return(dummyvec) })
 
 #Load TATA position, realigned from S288C to Cen.PK
-TATA.file <-tryCatch({read.cssv(paste("TF_data_files/Resources/","TATA_pos.csv",sep=""),sep=";", header=TRUE)},
+TATA.file <-tryCatch({read.csv(paste("TF_data_files/Resources/","TATA_pos.csv",sep=""),sep=";", header=TRUE)},
                     error=function(file){
-                      dummyvec<-data.frame(t(rep(NA, 3)))
+                      dummyvec<-data.frame(geneList, NA)
                       colnames(dummyvec)<-c("gene_id", "gene_common","TATA_cen_pos")
                       return(dummyvec) })
 
@@ -66,17 +66,14 @@ x.three<-seq(1,2000,3)
 mtry <- try(read.csv(paste("TF_data_files/Resources/","gogenes.csv",sep=""),sep=";"), 
             silent = TRUE)
 if (class(mtry) != "try-error") {
-  go_bio<-read.csv(paste("TF_data_files/Resources/","gogenes.csv",sep=""),sep=";")
+  gogenes<-read.csv(paste("TF_data_files/Resources/","gogenes.csv",sep=""),sep=";")
 } else {
   message("File doesn't exist, loading from Ensembl")
   ensembl=useMart("ENSEMBL_MART_ENSEMBL", "scerevisiae_gene_ensembl", host="www.ensembl.org")
   gogenes<-getBM(attributes=c('ensembl_gene_id','name_1006','namespace_1003'),mart=ensembl)
   
-  go_bio<-gogenes[grep("biological_process",gogenes$namespace_1003),] # Select only Biological Process
-  go_bio<-suppressMessages(remove.vars(go_bio,c("namespace_1003")))
-  
 }
-go_bio_unique<-data.frame(unique(go_bio$name_1006))
+
 
 #Load GEM peaks 
 for (i in name.TF){
@@ -86,7 +83,7 @@ for (i in name.TF){
                            error=function(file){
                              dummyvec<-data.frame(NA,NA,NA,NA,NA,NA,NA,NA,NA)
                              colnames(dummyvec)<-c("X","Gene","Chr","Pos","Strand","DistanceTSS","Strength","Condition","TF")
-                             return(dummyvec) })
+                             return(dummyvec) },silent=TRUE)
     datafile$TF<-i
   }else{
     file.name<-list.files(path="TF_data_files/Data/",pattern=paste(i,"(.*)_GEManalysis_(.*).csv$",sep=""))
@@ -94,7 +91,7 @@ for (i in name.TF){
                         error=function(file){
                           dummyvec<-data.frame(NA,NA,NA,NA,NA,NA,NA,NA,NA)
                           colnames(dummyvec)<-c("X","Gene","Chr","Pos","Strand","DistanceTSS","Strength","Condition","TF")
-                          return(dummyvec) })
+                          return(dummyvec) },silent=TRUE)
     datafile2$TF<-i
     datafile<-rbind(datafile,datafile2)}
     datafile_Peaks<-datafile
@@ -111,7 +108,7 @@ Reads_func<- function(tf,cond,data.New.TF) {
     p<-tryCatch({read.csv(paste0("TF_data_files/Data/", file.name),sep="\t",header=FALSE)},
                          error=function(file){
                            dummyvec<-data.frame(NA,NA,NA)
-                           return(dummyvec) })
+                           return(dummyvec) },silent = TRUE)
   }}
 
 #Generate the motif, sequence map and the peak distribution images
@@ -120,7 +117,7 @@ motif_func<-function(input.TF, condition){
     src = paste("TF_data_files/Data/",input.TF,"_",condition,"_logo1.png",sep=""),
     contentType = "image/png",
     alt = "motif",
-    height    = 100,
+    height    = 120,
     units     = "in"
   )
   return(out)
@@ -130,20 +127,29 @@ seq_map_func<-function(input.TF, condition){
     src = paste("TF_data_files/Data/",input.TF,"_",condition,"_SeqMap.png",sep=""),
     contentType = "image/png",
     alt = "seq_map",
-    height    = 100,
+    height    = 120,
     units     = "in"
   )
   return(out)
 }
 peak_dist_func<-function(input.TF, condition){
-   name.file<-list.files(path="TF_data_Files/Data", pattern=paste(input.TF,"_",condition,"_PeakHistogram(.*).png", sep=""))
-
+   
   out<-list(
-    
-    src = paste("TF_data_files/Data/",name.file,sep=""),
+    src = paste("TF_data_files/Data/",input.TF,"_",condition,"_PeakHistogram.png",sep=""),
     contentType = "image/png",
     alt = "peak_dist",
-    height    = 170,
+    height    = 120,
+    units     = "in"
+  )
+
+  return(out)
+}
+read_dist_func<-function(input.TF, condition){
+ out<-list(
+    src = paste("TF_data_files/Data/",input.TF,"_",condition,"_ReadProfile.png",sep=""),
+    contentType = "image/png",
+    alt = "read_dist",
+    height    = 120,
     units     = "in"
   )
   return(out)
@@ -213,8 +219,12 @@ Stat_data_func<-function(tf,cond,data.New.TF) {
                          error=function(file){
                            dummyvec<-data.frame(t(rep(NA, (length(name.Cond)+1))))
                            colnames(dummyvec)<-c("X",name.Cond)
-                           return(dummyvec) })
-      
+                           return(dummyvec) },silent = TRUE)
+      if( !any(names(datafile)==cond)){
+      dummyvec<-data.frame(t(rep(NA, (length(name.Cond)+1))))
+      colnames(dummyvec)<-c("X",name.Cond)
+      datafile<-dummyvec
+      }
       condTF<-datafile[names(datafile) == cond] 
       datafile.2<-data.frame(datafile$X,condTF)
       colnames(datafile.2)<-c("GeneC",i)
@@ -228,8 +238,9 @@ data_func<- function(Stat.Data,datain,pathway.val,val1) {
   data1<-Stat.Data
   ####Remove non-metabolic genes
   if (val1==1){
-    data1<-merge(data1,metabolicgenes,by="Gene")
+    data1<-merge(data1,Yeast8,by="Gene")
   }
+
   ####Merge with pathway genes
   data1<-merge(data1,pathway.val,by="Gene")
   if(is.null(data1)){data1<-c("Gene"="empty")}
@@ -323,7 +334,7 @@ fishers_test_func <- function(datain, txtstr1,outputval) {
   pval[pval < sign.lev] <- "*"
   cmap <- colorRampPalette(brewer.pal(9,"Blues"))(256)
   #Build heatmap based on log2OR correlation and annotate entry if OR is stat significant
-  hm1 <- heatmap.2(OR,col=cmap,tracecol = NA,cellnote = pval,notecol = "black", main=txtstr1,key.title = "Color Key", key.xlab = "log2OR", key.ylab = "")
+  hm1 <- heatmap.2(OR,col=cmap,tracecol = NA,cellnote = pval,notecol = "black", main=txtstr1, key.title = "Color Key", key.xlab = "log2OR", key.ylab = "")
   if(outputval==1){
     return(hm1)}
   else{
@@ -409,7 +420,7 @@ model_zero_func<-function(datain, txtstr, outputval,name.TF){
     geom_point()+
     geom_text(aes(label=rownames(datain)),hjust=0, vjust=0)+
     theme_classic()+
-    labs(x="Fitted",y="log2(RPKM)", title=txtstr, subtitle=txtstr1)+
+    labs(x="Fitted",y="log2(TPM)", title=txtstr, subtitle=txtstr1)+
     theme(axis.text.y=element_text(size=10, colour="#4c4c4c", angle = 0, debug = FALSE), 
           axis.text.x = element_text(colour = "#4c4c4c", size=10, angle = 0, debug = FALSE),
           rect = element_rect(fill = "transparent"),
@@ -462,7 +473,35 @@ cluster_func<-function(datain,outputval,nclu){
     return(out.df)
   }
 }
+shared_targets_func<-function(TFselect,cond){
+  TFgeneList<-c()
+  TFgeneList2<-c()
+  TFs<-TFselect
 
+  if(length(TFs)==1){return("Not enough TFs selected")}else{
+  for (i in 1:length(TFs)){
+
+  TFgeneList<-Stat_data_func(TFs[i], cond,"FALSE")
+  
+   TFgeneList<-TFgeneList[!is.na(TFgeneList[,3]==TRUE),]
+   TFgeneList<-TFgeneList[TFgeneList[,3]>0,]
+   TFgeneList<-data.frame(TFgeneList[,1])
+   colnames(TFgeneList)<-"Gene"
+
+   if(i==1){
+      TFgeneList2<-TFgeneList
+    
+    }else{
+      TFgeneList2<-data.frame(intersect(TFgeneList[,1],TFgeneList2[,1]))
+
+    }
+  }
+
+    colnames(TFgeneList2)<-"Gene"
+    
+    return(TFgeneList2)
+  }  
+}
 
 ###Plotfunction for read profiles
 alphaval=0.7
@@ -515,65 +554,22 @@ profile_plot_func<-function(TATA.df,temp_cond,x,Curr.Geneseq,ranges,colors.TF, d
 
 
 function(input, output) {
-  rdata.New.TF<-reactive({
-        if(!input$submit1){
-          for(cond in name.Cond){
-            out_list<-c()
-            WigLike<-NULL
-            Wigname<-paste("wigLike",cond,sep="")
-            out_list[Wigname]<-list(WigLike)
-            out_list["GEManalysis"]<-NULL
-            out_list["Targets"]<-NULL}
-          
-        }else{
-          out_list<-c()
-          withProgress(message = 'Uploading data',value = 0.1, {
-          names<-c()
-          name.file<-input$files[,1]
-          for(cond in name.Cond){
-          nameidx<-grep(paste("(.*)",cond,"(.*)wigLike$",sep=""),name.file)
-          
-          WigLike<-tryCatch({read.csv(input$files[[nameidx, 'datapath']],sep="\t",header=FALSE)},
-                       error=function(file){
-                         dummyvec<-data.frame(NA,NA,NA)
-                         return(dummyvec) })
-          
-          names<-c(names,name.file[nameidx], sep="\n")
-          Wigname<-paste("WigLike",cond,sep="")
-          out_list[Wigname]<-list(WigLike)
-          incProgress(0.7/length(name.Cond))
-          }
-          nameidx<-grep("(.*)_GEManalysis_(.*).csv$",name.file)
-            
-            names<-c(names,name.file[nameidx], sep="\n")
-            GEManalysis <-tryCatch({read.csv(input$files[[nameidx, 'datapath']],sep=",")},
-                                 error=function(file){
-                                   dummyvec<-data.frame(NA,NA,NA,NA,NA,NA,NA,NA,NA)
-                                   colnames(dummyvec)<-c("X","Gene","Chr","Pos","Strand","DistanceTSS","Strength","Condition","TF")
-                                   return(dummyvec) })
-          incProgress(0.1)
-          nameidx<-grep("(.*)Target(.*)csv$",name.file)
-          names<-c(names,name.file[nameidx], sep="\n")
-          Targets <-tryCatch({read.csv(input$files[[nameidx, 'datapath']],sep=",")},
-                                error=function(file){
-                                  dummyvec<-data.frame(t(rep(NA, (length(name.Cond)+1))))
-                                  colnames(dummyvec)<-c("X",name.Cond)
-                                  return(dummyvec) })
-          incProgress(0.1)
-          output$text3<-renderText({names})
-          out_list["GEManalysis"]<-list(GEManalysis)
-          out_list["Targets"]<-list(Targets)
-          })}
-        return(out_list)
-        })
-  observeEvent(input$submit1,{
-    call.data<-rdata.New.TF()
-    output$text2<-renderText({"Data uploaded succesfully"})
-  })
+ 
+  output$sctrex<-renderImage({
+    
+    return(list(
+      src = "TF_data_files/Resources/sctrex.png",
+      contentType = "image/png",
+      alt = "sctrex",
+      height    = 200,
+      units     = "in"
+    ))
+    
+  },deleteFile = FALSE)
   rname.TF<-reactive({
     name.TF<-name.TF
     if(!input$submit1){name.TF<-name.TF}else{
-      name.TF<-c(name.TF,"New_TF")
+      name.TF[["New_TF"]]<-"New_TF"
     }
     return(name.TF)
   })
@@ -583,29 +579,64 @@ function(input, output) {
     }
     return(myColors.TF)
   })
-  rdatafile_Peaks<-reactive({
-    if(!input$submit1){
-      datafile_Peaks<-datafile_Peaks}else{
-        Gemanalysis<-rdata.New.TF()$GEManalysis
-        Gemanalysis$TF<-"New_TF"
-      datafile_Peaks<-rbind(datafile_Peaks,Gemanalysis)
-      }
-    return(datafile_Peaks)
-    })
-
-  output$Checkbox1<-renderUI({checkboxGroupInput("checkboxgrp1", "TFs", TF_list[1:(length(TF_list)/2)])})
-  output$Checkbox2<-renderUI({checkboxGroupInput("checkboxgrp2", "TFs", TF_list[(length(TF_list)/2+1):length(TF_list)])})
   
-  output$radioOut <- renderUI({
-    if(input$submit1){
-      new_list<-TF_list
-      new_list[["New_TF"]]<-"New_TF"
-      radioButtons("TFs","",new_list)}else{return(radioButtons("TFs","",TF_list))}
+  #TF summary page
+  output$TFselectSum<-renderUI({
+    autocomplete_list<-cbind(rname.TF())
+    selectizeInput(inputId = "TFs",
+                   label = "Select TF",
+                   choices = autocomplete_list,
+                   selected = rname.TF()[1],
+                   multiple = FALSE, 
+                   options = list(create = FALSE)) 
   })
-  output$checkTF <- renderUI({
-    if(input$submit1){
-      checkboxInput("New_TF","New_TF",value=T)}else{return(NULL)}
+  output$CondselectSum<-renderUI({
+    autocomplete_list<-cbind(name.Cond)
+    selectizeInput(inputId = "CondselectSum",
+                   label = "Select Conditions",
+                   choices = autocomplete_list,
+                   selected = name.Cond[1],
+                   multiple = TRUE, 
+                   options = list(create = FALSE)) 
   })
+  rdataTarget<-reactive({
+    
+    if(!is.null(input$TFs)){
+      
+      if(input$TFs=="New_TF"){ 
+        dataTarget<-rdata.New.TF()$Targets
+      }else{
+        
+        name<-list.files(path="TF_data_files/Data/",pattern=paste(input$TFs,"_geneTargetList_(.*).csv$",sep=""))
+        dataTarget <-tryCatch({read.csv(paste0("TF_data_files/Data/",name),sep=",")},
+                              error=function(file){
+                                dummyvec<-data.frame(t(rep(NA, (length(name.Cond)+1))))
+                                colnames(dummyvec)<-c("X",name.Cond)
+                                return(dummyvec) },silent = TRUE)
+      }
+      colnames(dataTarget)[1]<-"Gene Common"
+      DT::datatable(dataTarget, rownames=FALSE, extensions = c('FixedColumns',"FixedHeader"), 
+                    options = list(dom = 't', 
+                                   scrollX = TRUE, 
+                                   paging=FALSE,
+                                   fixedHeader=TRUE,
+                                   fixedColumns = list(leftColumns = 1, rightColumns = 0)))
+      
+    }else{dataTarget=NULL}
+    return(dataTarget)
+  })
+  output$table1 <- renderDataTable({ rdataTarget()}, options=list(pageLength=5))
+  rCondselectSum<-reactive({
+    idx<-c()
+    cond<-input$CondselectSum
+    for(i in 1:length(cond)){
+      if(is.null(cond[i])){i=cond[1]}else{
+      idx[i] <-grep(as.character(cond[i]), name.Cond)
+      }}
+    return(idx)
+  })
+  
+  #Peak profile page
   output$text<-renderUI({
     geneS<-gene.Systematic
     geneC<-gene.Common
@@ -619,42 +650,61 @@ function(input, output) {
                    multiple = FALSE, 
                    options = list(create = FALSE)) 
   })
-  New_TF<- reactive({
-    if(input$submit1){
-      New_TF<-TRUE}else{New_TF<-FALSE}
+  output$TFselect<-renderUI({
+    autocomplete_list<-cbind(rname.TF())
+    selectizeInput(inputId = "TFselect",
+                   label = "Select TFs",
+                   choices = autocomplete_list,
+                   selected = ,
+                   multiple = TRUE, 
+                   options = list(create = FALSE)) 
+  })
+  output$CondselectPeak<-renderUI({
+    autocomplete_list<-cbind(name.Cond)
+    selectizeInput(inputId = "CondselectPeak",
+                   label = "Select Conditions",
+                   choices = autocomplete_list,
+                   selected = name.Cond[1],
+                   multiple = TRUE, 
+                   options = list(create = FALSE)) 
+  })
+  rCondselectPeak<-eventReactive(input$Load,{
+    idx<-c()
+    cond<-input$CondselectPeak
+    for(i in 1:length(cond)){
+      idx[i]<-grep(as.character(cond[i]), name.Cond)}
+    return(idx)
   })
   rinputs<-reactive({
-    activeTF<-c(input$checkboxgrp1[],input$checkboxgrp2[])
+    activeTF<-input$TFselect
     inputs<-c()
-    for(i in name.TF){
+    for(i in rname.TF()){
       inputs[i]<-FALSE
       if(!is.null(activeTF)){
         for(o in 1:length(activeTF)){
-            if( as.character(activeTF[o])==as.character(i)){
-              inputs[i]<-TRUE
-            }
+          if( as.character(activeTF[o])==as.character(i)){
+            inputs[i]<-TRUE
+          }
         }
       }
     }
-     inputs["New_TF"]<-New_TF()
-     return(inputs)
-     })
+    return(inputs)
+  })
   ranges <- reactiveValues(x = NULL, y = NULL)
   rGeneidx<-eventReactive(input$Load,{
     if(!input$text==""){
-    input.text<-toupper(input$text)
-    Geneidx<-grep(paste("^",input.text,"$",sep=""), as.character(gene.Common[,1]))
-    if (length(Geneidx)==0){
-      Geneidx<-grep(paste("^",input.text,"$",sep=""), as.character(gene.Systematic[,1]))
-    }
-    return(Geneidx)
+      input.text<-toupper(input$text)
+      Geneidx<-grep(paste("^",input.text,"$",sep=""), as.character(gene.Common[,1]))
+      if (length(Geneidx)==0){
+        Geneidx<-grep(paste("^",input.text,"$",sep=""), as.character(gene.Systematic[,1]))
+      }
+      return(Geneidx)
     }else{return(NULL)}
   })
-
   rpeak.dist.data<-eventReactive(input$Load, {
-   inputs<-rinputs()
-   peak.dist.data<-c()
-   for (cond in name.Cond){
+    inputs<-rinputs()
+    peak.dist.data<-c()
+    for (cond in name.Cond){
       for (o in 1:length(rname.TF())){
         if(inputs[o]==TRUE){
           p  <-Reads_func(rname.TF()[o],cond,rdata.New.TF())
@@ -671,50 +721,50 @@ function(input, output) {
           temp.dist<-rbind(temp.dist, data.dist)
         }
       }
-
+      
       peak.dist.data[cond]<-list(temp.dist)
     }
     return(peak.dist.data)
-    })
+  })
   rBS<-eventReactive(input$Load,{
-      BS<-c()
-      input.gene<-as.character(gene.Systematic[rGeneidx(),1])
-      input.gene2<-as.character(gene.Common[rGeneidx(),1])
-      for(cond in name.Cond){
-        datafile_Peaks<-rdatafile_Peaks()
-        tempfile3<-subset(datafile_Peaks, datafile_Peaks$Gene == input.gene2 & datafile_Peaks$Condition == cond )
-       
-        x1<-c()
-        x2<-c()
-        y1<-c()
-        y2<-c()
-        t<-c()
-        colval<-c()
-        #Check if tempfile3 isn't 0
-        if(nrow(tempfile3)>0){
-          pos<-1000+as.numeric(tempfile3$DistanceTSS)
-          #Generate the vector for plotting 
-          for(j in 1:(length(pos))){
-            x1[j]<-pos[j]-5
-            x2[j]<-pos[j]+5
-            y1[j]<-0.1
-            y2[j]<-(-3.1)
-            t[j]<-as.character(tempfile3$TF[j])
-            colval[j]<-as.character(subset(rmyColors.TF(), rname.TF() == as.character(tempfile3$TF[j])))
-          }
-        }else{
-          x1<-0
-          x2<-0
-          y1<-0
-          y2<-0
-          t<-"Seq"
-          colval<-"#525252"}
-        d=data.frame(x1, x2, y1, y2, t, colval)
-        #Removes a BS if it is further than 1 or 2000 bp
-        d<-subset(d, d$x1 > -1 & d$x2<2001)
-        BS[cond]<-list(d)
-      }
-      return(BS)
+    BS<-c()
+    input.gene<-as.character(gene.Systematic[rGeneidx(),1])
+    input.gene2<-as.character(gene.Common[rGeneidx(),1])
+    for(cond in name.Cond){
+      datafile_Peaks<-rdatafile_Peaks()
+      tempfile3<-subset(datafile_Peaks, datafile_Peaks$Gene == input.gene2 & datafile_Peaks$Condition == cond )
+      
+      x1<-c()
+      x2<-c()
+      y1<-c()
+      y2<-c()
+      t<-c()
+      colval<-c()
+      #Check if tempfile3 isn't 0
+      if(nrow(tempfile3)>0){
+        pos<-1000+as.numeric(tempfile3$DistanceTSS)
+        #Generate the vector for plotting 
+        for(j in 1:(length(pos))){
+          x1[j]<-pos[j]-5
+          x2[j]<-pos[j]+5
+          y1[j]<-0.1
+          y2[j]<-(-3.1)
+          t[j]<-as.character(tempfile3$TF[j])
+          colval[j]<-as.character(subset(rmyColors.TF(), rname.TF() == as.character(tempfile3$TF[j])))
+        }
+      }else{
+        x1<-0
+        x2<-0
+        y1<-0
+        y2<-0
+        t<-"Seq"
+        colval<-"#525252"}
+      d=data.frame(x1, x2, y1, y2, t, colval)
+      #Removes a BS if it is further than 1 or 2000 bp
+      d<-subset(d, d$x1 > -1 & d$x2<2001)
+      BS[cond]<-list(d)
+    }
+    return(BS)
   })
   rCurr.Geneseq<-reactive({
     if(is.null(ranges$x[1])==TRUE || sum(ranges$x[2]-ranges$x[1])>200){
@@ -762,26 +812,24 @@ function(input, output) {
     }
   })
   rTATA<-eventReactive(input$Load,{
-      input.text<-toupper(input$text)
-      Geneidx.tata<-grep(paste("^",input.text,"$",sep=""), as.character(TATA.file$gene_id) )
-      if (length(Geneidx.tata)==0){
-        Geneidx.tata<-grep(paste("^",input.text,"$",sep=""), as.character(TATA.file$gene_common))
-      }
-      
-      TATAbox<-TATA.file[Geneidx.tata,"TATA_cen_pos"]
-      if(is.na(TATAbox)==FALSE){
-        TATAbox.x<-TATAbox-0.5
-        TATAbox.y<-TATAbox+7.5
-      }else if(is.na(TATAbox)==TRUE){
-        TATAbox.x<-(1)*NA
-        TATAbox.y<-(1)*NA
-      }
-      class<-c("TATAbox")
-      colour<-c("grey")
-      df<-data.frame(x=TATAbox.x, y=TATAbox.y,class=class,colour=colour)
-      TATA_GTF.df<-df
+    input.text<-toupper(input$text)
+    Geneidx.tata<-grep(paste("^",input.text,"$",sep=""), as.character(TATA.file$gene_id) )
+    if (length(Geneidx.tata)==0){
+      Geneidx.tata<-grep(paste("^",input.text,"$",sep=""), as.character(TATA.file$gene_common))
+    }
+    TATAbox<-TATA.file[Geneidx.tata,"TATA_cen_pos"]
+    if(is.na(TATAbox)==FALSE){
+      TATAbox.x<-TATAbox-0.5
+      TATAbox.y<-TATAbox+7.5
+    }else if(is.na(TATAbox)==TRUE){
+      TATAbox.x<-(1)*NA
+      TATAbox.y<-(1)*NA
+    }
+    class<-c("TATAbox")
+    colour<-c("grey")
+    df<-data.frame(x=TATAbox.x, y=TATAbox.y,class=class,colour=colour)
+    TATA_GTF.df<-df
   })
-  
   rGene_start<-reactive({
     
     input.gene<-as.character(gene.Common[rGeneidx(),1])
@@ -800,94 +848,70 @@ function(input, output) {
     tempfile.tpm<-subset(TPM.data, TPM.data$Gene == input.gene)
     
     for(cond in name.Cond){
-     TPM[cond]<-data.frame(tempfile.tpm[cond])
-     }
+      TPM[cond]<-data.frame(tempfile.tpm[cond])
+    }
     TPM
   })
-  rMotiffinder<-eventReactive(input$motiffinder,{
-      Geneidx<-rGeneidx()
-      curr.geneSys<-gene.Systematic[Geneidx,1]
-      Geneidx.seq<-grep(paste("^",curr.geneSys,"$",sep=""), as.character(Geneseq[,1]))
-      Curr.Geneseq<-Geneseq[Geneidx.seq,-(1:2)]   
-      Curr.Geneseq<-as.character(Curr.Geneseq)
-      motifstr<-toupper(input$motifstr)
-      
-      motifstr<-strsplit(motifstr, "[+]")
-      motifstr<-unlist(motifstr)
-      for(j in 1:length(motifstr)){
-        
-        dna.inputstr<-DNAString(motifstr[j])
-        dna.Curr.Geneseq<-DNAString(Curr.Geneseq)
-        motifposFW<-matchPattern(dna.inputstr,dna.Curr.Geneseq,max.mismatch=0,fixed="subject")
-        dna.inputstr.rev<-reverseComplement(dna.inputstr)
-        motifposRV<-matchPattern(dna.inputstr.rev,dna.Curr.Geneseq,max.mismatch=0,fixed="subject")
-        pos.FW<-ranges(motifposFW)  
-        pos.RV<-ranges(motifposRV)
-        x1<-c()
-        x2<-c()
-        y1<-c()
-        y2<-c()
-        colval<-c()
-        if(is.null(length(start(pos.FW)))&&is.null(length(start(pos.RV))))return(null)
-        if(!is.null(length(start(pos.FW)))){
-          for (i in 1:length(start(pos.FW))){
-            x1[i]<-c(start(pos.FW)[i])
-            x2[i]<-c(end(pos.FW)[i])
-            y1[i]<-c(1)
-            y2[i]<-c(-1)
-            colval[i]<-c("blue")
-          }
-          d.FW<-data.frame(x1, x2, y1, y2, colval)
-        }
-        x1<-c()
-        x2<-c()
-        y1<-c()
-        y2<-c()
-        colval<-c()
-        if(!is.null(length(start(pos.RV)))){
-          for (i in 1:length(start(pos.RV))){
-            x1[i]<-c(start(pos.RV)[i])
-            x2[i]<-c(end(pos.RV)[i])
-            y1[i]<-c(1)
-            y2[i]<-c(-1)
-            colval[i]<-c("red")
-          }
-          d.RV<-data.frame(x1, x2, y1, y2, colval)}
-        if (j==1){
-          d<-rbind(d.FW,d.RV)  
-        }
-        if(j>1){
-          d<-rbind(d,d.FW,d.RV)
-        }
-        return(d)}
-  })
-  rdataTarget<-reactive({
+  rMotiffinder<-eventReactive(input$motiffinder|input$Load,{
 
-  if(!is.null(input$TFs)){
-
-    if(input$TFs=="New_TF"){ 
-        dataTarget<-rdata.New.TF()$Targets
-    }else{
+    Geneidx<-rGeneidx()
+    curr.geneSys<-gene.Systematic[Geneidx,1]
+    Geneidx.seq<-grep(paste("^",curr.geneSys,"$",sep=""), as.character(Geneseq[,1]))
+    Curr.Geneseq<-Geneseq[Geneidx.seq,-(1:2)]   
+    Curr.Geneseq<-as.character(Curr.Geneseq)
+    motifstr<-toupper(input$motifstr)
+    motifstr<-strsplit(motifstr, "[+]")
+    motifstr<-unlist(motifstr)
+    for(j in 1:length(motifstr)){
       
-      name<-list.files(path="TF_data_files/Data/",pattern=paste(input$TFs,"_geneTargetList_(.*).csv$",sep=""))
-      dataTarget <-tryCatch({read.csv(paste0("TF_data_files/Data/",name),sep=",")},
-                          error=function(file){
-                            dummyvec<-data.frame(t(rep(NA, (length(name.Cond)+1))))
-                            colnames(dummyvec)<-c("X",name.Cond)
-                            return(dummyvec) })
+      dna.inputstr<-DNAString(motifstr[j])
+      dna.Curr.Geneseq<-DNAString(Curr.Geneseq)
+      motifposFW<-matchPattern(dna.inputstr,dna.Curr.Geneseq,max.mismatch=0,fixed="subject")
+      dna.inputstr.rev<-reverseComplement(dna.inputstr)
+      motifposRV<-matchPattern(dna.inputstr.rev,dna.Curr.Geneseq,max.mismatch=0,fixed="subject")
+      pos.FW<-ranges(motifposFW)  
+      pos.RV<-ranges(motifposRV)
+      x1<-c()
+      x2<-c()
+      y1<-c()
+      y2<-c()
+      colval<-c()
+      if(is.null(length(start(pos.FW)))&&is.null(length(start(pos.RV))))return(null)
+      if(!is.null(length(start(pos.FW)))){
+        for (i in 1:length(start(pos.FW))){
+          x1[i]<-c(start(pos.FW)[i])
+          x2[i]<-c(end(pos.FW)[i])
+          y1[i]<-c(1)
+          y2[i]<-c(-1)
+          colval[i]<-c("blue")
+        }
+        d.FW<-data.frame(x1, x2, y1, y2, colval)
       }
-      colnames(dataTarget)[1]<-"Gene Common"
-         DT::datatable(dataTarget, rownames=FALSE, extensions = c('FixedColumns',"FixedHeader"), 
-                  options = list(dom = 't', 
-                                 scrollX = TRUE, 
-                                 paging=FALSE,
-                                 fixedHeader=TRUE,
-                                 fixedColumns = list(leftColumns = 1, rightColumns = 0)))
+      x1<-c()
+      x2<-c()
+      y1<-c()
+      y2<-c()
+      colval<-c()
+      if(!is.null(length(start(pos.RV)))){
+        for (i in 1:length(start(pos.RV))){
+          x1[i]<-c(start(pos.RV)[i])
+          x2[i]<-c(end(pos.RV)[i])
+          y1[i]<-c(1)
+          y2[i]<-c(-1)
+          colval[i]<-c("red")
+        }
+        d.RV<-data.frame(x1, x2, y1, y2, colval)}
+      if (j==1){
+        d<-rbind(d.FW,d.RV)  
+      }
+      if(j>1){
+        d<-rbind(d,d.FW,d.RV)
+        
+      }
+    }
+    return(d)
     
-      }else{dataTarget=NULL}
-    return(dataTarget)
   })
-  
   observeEvent(input$plot1_dblclick, {
     # When a double-click happens, check if there's a brush on the plot.
     # If so, zoom to the brush bounds; if not, reset the zoom.
@@ -953,10 +977,9 @@ function(input, output) {
   rSeqMin<-eventReactive(input$SeqFind,{
     SeqMin<-input$SeqMin
   })
-  
   output$Sequnce_out <- renderText({
-      SeqMax<-rSeqMax()
-      SeqMin<-rSeqMin()
+    SeqMax<-rSeqMax()
+    SeqMin<-rSeqMin()
     if((as.numeric(SeqMax)-as.numeric(SeqMin))>0){
       curr.geneSys<-gene.Systematic[rGeneidx(),1]
       Geneidx.seq<-grep(paste("^",curr.geneSys,"$",sep=""), as.character(Geneseq[,1]))
@@ -978,13 +1001,39 @@ function(input, output) {
       Out.Geneseq<-as.character(Out.Geneseq)
       
     }else(Out.Geneseq<-"Wrong input sequence")
-      return(Out.Geneseq)
-    })
-
-  rCCM<-reactive({
+    return(Out.Geneseq)
+  })
+  
+  #TF analysis page
+  output$TFselectAn<-renderUI({
+    autocomplete_list<-cbind(rname.TF())
+    selectizeInput(inputId = "TFselectAn",
+                   label = "Select TFs",
+                   choices = autocomplete_list,
+                   selected = ,
+                   multiple = TRUE, 
+                   options = list(create = FALSE)) 
+  })
+  output$CondselectAn<-renderUI({
+    autocomplete_list<-cbind(name.Cond)
+    selectizeInput(inputId = "CondselectAn",
+                   label = "Select Conditions",
+                   choices = autocomplete_list,
+                   selected = name.Cond[1],
+                   multiple = TRUE, 
+                   options = list(create = FALSE)) 
+  })
+  rCondselectAn<-eventReactive(input$search,{
+    idx<-c()
+    cond<-input$CondselectAn
+    for(i in 1:length(cond)){
+      idx[i]<-grep(as.character(cond[i]), name.Cond)}
+    return(idx)
+  })
+  rGenelist<-reactive({
     val1=0
-    if(input$val1=="Exclude dubious and non-Yeast 8" ){val1=1}
-    if(input$val1=="Include dubious and non-Yeast 8"){val1=2}
+    if(input$val1=="Only Yeast8" ){val1=1}
+    if(input$val1=="All Genes"){val1=2}
     return(val1)
   })
   rGOterm<-eventReactive(input$search,{
@@ -993,15 +1042,25 @@ function(input, output) {
   rTest<-eventReactive(input$search,{
     test<-input$test
   })
-  
   output$goterms<-renderDataTable({
+    if(input$test=="Shared Targets"){
+      cond<-input$CondselectAn
+      if(length(input$TFselectAn)>0){
+      for(c in 1:length(cond)){
+      p<-data.frame(shared_targets_func(input$TFselectAn,cond[c]))
+      if(c==1){
+        p2<-p
+      }else{
+        p2<-data.frame("Error: One condition at the time")}
+      }
+      return(p2)}else{return(data.frame("Error: Select TFs"))}
+    }else{
     pathways.name<-unlist(strsplit(tolower(input$goterm), "[+]"))
     pathways.go <- filter(go_bio, grepl(paste(pathways.name, collapse="|"),name_1006))
     pathways.go1<-data.frame(unique(pathways.go$name_1006))
     colnames(pathways.go1)<-"GO-terms"
-    return(pathways.go1)
+    return(pathways.go1)}
   }, options=list(pageLength=5))
-  
   output$TestInput<-renderUI({
     if(input$test=="Fisher"){
       textOut<-("The Fisher test is based on the occurrence of one transcription factor at the same gene as another transcription factor. The probability is plotted in a heatmap where * denotes p<0.001")
@@ -1018,28 +1077,99 @@ function(input, output) {
     if(input$test=="Linear Model"){
       textOut<-("Based on the transcription factor occurrence a linear model is used to predict the resulting TPM values. Both the R-square and the R-squared adjusted is displayed" )
     }
+    if(input$test=="Shared Targets"){
+      textOut<-("The shared targets function only looks at the selcted transcription factors common gene targets" )
+    }
     tagList(
       actionButton("TestInfo", "?"),
       bsTooltip("TestInfo", textOut,
                 "right", options = list(container = "body"))
     )
   })
+  output$GOSharedTargets<-renderUI({
+    if(input$test=="Shared Targets"){
+      outtext<-"The resulting genes from the Shared Targets of the selected TFs"
+    }else{
+      outtext<-"The selected GO-terms from search results"
+    }
+    return(outtext)
+  })
 
-  output$table1 <- renderDataTable({ rdataTarget()}, options=list(pageLength=5))
-  output$sctrex<-renderImage({
-    
-    return(list(
-      src = "TF_data_files/Resources/sctrex.png",
-      contentType = "image/png",
-      alt = "sctrex",
-      height    = 200,
-      units     = "in"
-    ))
-    
-  },deleteFile = FALSE)
+  #Include TF page
+  observeEvent(input$submit1,{
+    call.data<-rdata.New.TF()
+    output$text2<-renderText({"Data uploaded succesfully"})
+  })
+  rdata.New.TF<-reactive({
+    if(!input$submit1){
+      for(cond in name.Cond){
+        out_list<-c()
+        WigLike<-NULL
+        Wigname<-paste("wigLike",cond,sep="")
+        out_list[Wigname]<-list(WigLike)
+        out_list["GEManalysis"]<-NULL
+        out_list["Targets"]<-NULL}
+      
+    }else{
+      out_list<-c()
+      withProgress(message = 'Uploading data',value = 0.1, {
+        names<-c()
+        name.file<-input$files[,1]
+        for(cond in name.Cond){
+          nameidx<-grep(paste("(.*)",cond,"(.*)wigLike$",sep=""),name.file)
+          
+          WigLike<-tryCatch({read.csv(input$files[[nameidx, 'datapath']],sep="\t",header=FALSE)},
+                            error=function(file){
+                              dummyvec<-data.frame(NA,NA,NA)
+                              return(dummyvec) }, silent=TRUE)
+          
+          names<-c(names,name.file[nameidx], sep="\n")
+          Wigname<-paste("WigLike",cond,sep="")
+          out_list[Wigname]<-list(WigLike)
+          incProgress(0.7/length(name.Cond))
+        }
+        nameidx<-grep("(.*)_GEManalysis_(.*).csv$",name.file)
+        
+        names<-c(names,name.file[nameidx], sep="\n")
+        GEManalysis <-tryCatch({read.csv(input$files[[nameidx, 'datapath']],sep=",")},
+                               error=function(file){
+                                 dummyvec<-data.frame(NA,NA,NA,NA,NA,NA,NA,NA,NA)
+                                 colnames(dummyvec)<-c("X","Gene","Chr","Pos","Strand","DistanceTSS","Strength","Condition","TF")
+                                 return(dummyvec) })
+        incProgress(0.1)
+        nameidx<-grep("(.*)Target(.*)csv$",name.file)
+        names<-c(names,name.file[nameidx], sep="\n")
+        Targets <-tryCatch({read.csv(input$files[[nameidx, 'datapath']],sep=",")},
+                           error=function(file){
+                             dummyvec<-data.frame(t(rep(NA, (length(name.Cond)+1))))
+                             colnames(dummyvec)<-c("X",name.Cond)
+                             return(dummyvec) })
+        incProgress(0.1)
+        output$text3<-renderText({names})
+        out_list["GEManalysis"]<-list(GEManalysis)
+        out_list["Targets"]<-list(Targets)
+      })}
+    return(out_list)
+  })
+  rdatafile_Peaks<-reactive({
+    if(!input$submit1){
+      datafile_Peaks<-datafile_Peaks}else{
+        Gemanalysis<-rdata.New.TF()$GEManalysis
+        Gemanalysis$TF<-"New_TF"
+        datafile_Peaks<-rbind(datafile_Peaks,Gemanalysis)
+      }
+    return(datafile_Peaks)
+  })
+  New_TF<- reactive({
+    if(input$submit1){
+      New_TF<-TRUE}else{New_TF<-FALSE}
+  })
 
+
+  
+  # Plots
   output$plots.peak <- renderUI({
-    plot_output_list <- lapply(1:length(name.Cond), function(i) {
+    plot_output_list <- lapply(rCondselectPeak(), function(i) {
       plotname <- paste("plot", i, sep="")
       plottitle <- paste("plottitle", i, sep="")
       tags$div(class = "group-output",
@@ -1049,28 +1179,25 @@ function(input, output) {
                           dblclick = "plot1_dblclick", 
                            hover ="plot1_hover",
                            brush = brushOpts(id = "plot1_brush",resetOnNew = TRUE)
-               ) %>% withSpinner(color="#0dc5c1")
+               ) 
                
       )
     })
     do.call(tagList, plot_output_list)
   })
   output$plots.analysis <- renderUI({
-    analysis_output_list <- lapply(1:length(name.Cond), function(i) {
+    analysis_output_list <- lapply(rCondselectAn(), function(i) {
       plotname <- paste("plotAn", i, sep="")
       plottitle <- paste("plottitleAn", i, sep="")
       tags$div(class = "group-output",
                textOutput(plottitle, container = h3),
-               plotOutput(plotname, 
-                          height = 350 
-               ) %>% withSpinner(color="#0dc5c1")
-               
+               plotOutput(plotname,height = 350)
       )
     })
     do.call(tagList, analysis_output_list)
   })
   output$plots.motif <- renderUI({
-    motif_output_list <- lapply(1:length(name.Cond), function(i) {
+    motif_output_list <- lapply(rCondselectSum(), function(i) {
       plotname <- paste("Motif", i, sep="")
       plottitle <- paste("plottitleMot", i, sep="")
       tags$div(class = "group-output",
@@ -1080,7 +1207,7 @@ function(input, output) {
     do.call(tagList, motif_output_list)
   })
   output$plots.seq <- renderUI({
-    seq_output_list <- lapply(1:length(name.Cond), function(i) {
+    seq_output_list <- lapply(rCondselectSum(), function(i) {
       plotname <- paste("Seq", i, sep="")
       plottitle <- paste("plottitleSeq", i, sep="")
       tags$div(class = "group-output",
@@ -1090,7 +1217,7 @@ function(input, output) {
     do.call(tagList, seq_output_list)
   })
   output$plots.PeakDist <- renderUI({
-    PeakDist_output_list <- lapply(1:length(name.Cond), function(i) {
+    PeakDist_output_list <- lapply(rCondselectSum(), function(i) {
       plotname <- paste("PeakDist", i, sep="")
       plottitle <- paste("plottitlePeakDist", i, sep="")
       tags$div(class = "group-output",
@@ -1099,7 +1226,17 @@ function(input, output) {
     })
     do.call(tagList, PeakDist_output_list)
   })
-  output$plot5 <-renderPlot({
+  output$plots.ReadDist <- renderUI({
+    ReadDist_output_list <- lapply(rCondselectSum(), function(i) {
+      plotname <- paste("ReadDist", i, sep="")
+      plottitle <- paste("plottitleReadDist", i, sep="")
+      tags$div(class = "group-output",
+               textOutput(plottitle, container = h3),
+               imageOutput(plotname,height=200))
+    })
+    do.call(tagList, ReadDist_output_list)
+  })
+  output$plotBS <-renderPlot({
     n=length(rname.TF())
     
     n2=10
@@ -1129,10 +1266,13 @@ function(input, output) {
     
     p1
   },bg="transparent")
+ 
   #Dynamically generate all the plots based on conditions
   for (i in 1:length(name.Cond)) {
     local({
       my_i<-i
+      
+      
       plottitleMot <- paste("plottitleMot", my_i, sep="")
       output[[plottitleMot]] <- renderText({name.Cond[my_i]})
       plotnameMot <- paste("Motif", my_i, sep="")
@@ -1154,6 +1294,13 @@ function(input, output) {
         peak_dist<-peak_dist_func(input$TFs,name.Cond[my_i])
       },deleteFile = FALSE)
       
+      plottitleReadDist <- paste("plottitleReadDist", my_i, sep="")
+      output[[plottitleReadDist]] <- renderText({name.Cond[my_i]})
+      plotnameReadDist <- paste("ReadDist", my_i, sep="")
+      output[[plotnameReadDist]] <- renderImage({
+        read_dist<-read_dist_func(input$TFs,name.Cond[my_i])
+      },deleteFile = FALSE)
+      
       plottitle <- paste("plottitle", my_i, sep="")
       output[[plottitle]] <- renderText({name.Cond[my_i]})
       plotname <- paste("plot", my_i, sep="")
@@ -1171,16 +1318,18 @@ function(input, output) {
       plotnameAn <- paste("plotAn", my_i, sep="")
       output[[plotnameAn]] <- renderPlot({
         downloadVal=1
-        p1<-tryCatch({Stat_plot_func(rCCM(),downloadVal,name.Cond[my_i],rGOterm(),rname.TF(),rTest(),rdata.New.TF(),input$slider1)},
+        p1<-tryCatch({Stat_plot_func(rGenelist(),downloadVal,name.Cond[my_i],rGOterm(),rname.TF(),rTest(),rdata.New.TF(),input$slider1)},
                                error=function(analysis){
                                  return(ggplot()+theme_void()+geom_text(aes(x=1,y=1,label="Not enough genes selected to do statistical function",hjust=(0.4) ),size=5))}
         )
         p1
       },bg="transparent")
       
+      
     })
   }
-  
+
+  #Download funcions
   output$ReadsDown<-renderUI({
     selectInput("ReadsData", "Download Data",name.Cond, selected=name.Cond[1], selectize=TRUE)
   })
@@ -1221,7 +1370,7 @@ function(input, output) {
   )
   rdowloadStatData<-reactive({
     downloadVal=2
-    out.data<-Stat_plot_func(rCCM(),downloadVal,input$StatData,rGOterm(),rname.TF(),rTest(),rdata.New.TF(),input$slider1)
+    out.data<-Stat_plot_func(rGenelist(),downloadVal,input$StatData,rGOterm(),rname.TF(),rTest(),rdata.New.TF(),input$slider1)
     return(out.data)
   })
   output$downloadStatData <- downloadHandler(

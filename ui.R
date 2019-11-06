@@ -62,7 +62,8 @@ fluidPage(
                          sidebarPanel(width=2,
                            fluidRow("Select Transcription Factor",
                                    column(width=6,
-                                          uiOutput("radioOut")
+                                          uiOutput("TFselectSum"),
+                                          uiOutput("CondselectSum")
                                           ),
                                     column(width=12,
                                     h4("Dowload Data"),
@@ -78,15 +79,18 @@ fluidPage(
                                            h4("Targets"),
                                            h6(dataTableOutput("table1",height=200 ))),
                            fluidRow(
-                                    column(width=4,
+                                    column(width=3,
                                            h4("Consensus Motif"),
                                            uiOutput("plots.motif",height=200)),
-                                    column(width=4,
+                                    column(width=3,
                                            h4("Sequence map"),
                                            uiOutput("plots.seq",height=200)),
-                                    column(width=4,
+                                    column(width=3,
                                            h4("Peak Distribution Profile"), 
-                                           uiOutput("plots.PeakDist",height=200))
+                                           uiOutput("plots.PeakDist",height=200)),
+                                    column(width=3,
+                                           h4("Read Distribution Profile"), 
+                                           uiOutput("plots.ReadDist",width=50))
                                     )
                                   )
                        )
@@ -97,11 +101,8 @@ fluidPage(
                                 uiOutput("text"),
                                 verbatimTextOutput("GeneInfo"),
                                 h4("Select Transcription Factor"),
-                                column(width=6,
-                                       uiOutput("Checkbox1")),
-                                column(width=6,
-                                       uiOutput("Checkbox2"),
-                                uiOutput("checkTF")),
+                                uiOutput("TFselect"),
+                                uiOutput("CondselectPeak"),
                                 actionButton("Load", "Load Data"),
                                 
                                 column(width=12,
@@ -127,7 +128,7 @@ fluidPage(
                                        checkboxInput("TF_BS","TF BS", value = F),
                                        checkboxInput("TATA","TATA", value = F),
                                        checkboxInput("yranges","Fixed y-axis", value = F),
-                                       plotOutput("plot5",height = 800)
+                                       plotOutput("plotBS",height = 800)
                                                 )
                                 )
                        )
@@ -135,24 +136,32 @@ fluidPage(
               
               tabPanel("Transcription Factor Analysis",
                        sidebarLayout(
-                         sidebarPanel(
+                         sidebarPanel(width=3,
                                       h3("Dataset"),
-                                      h5("The analysis is based on peak identification"),
-                                      selectInput("val1", "Exclude or Include data",c("Exclude dubious and non-Yeast 8","Include dubious and non-Yeast 8"), selected="Exclude dubious and non-Yeast 8", selectize=TRUE),
-                                      textInput("goterm", "GO-term", value="Amino acid"),
-                                      h6("To include more GO-terms add + inbetween."),
-                                      selectInput("test", "Test",c("Fisher","Heatmap","Network","Cluster","Linear Model"), selected="Fisher", selectize=TRUE),
+                                      h5("This analysis is based on peak identification"),
+                                      selectInput("test", "Test",c("Fisher","Heatmap","Network","Cluster","Linear Model","Shared Targets"), selected="Fisher", selectize=TRUE),
                                       
                                       
                                       conditionalPanel(
                                         condition = "input.test == 'Cluster'",
                                         sliderInput("slider1", label = h5("Number of cluster"), min = 1, 
                                                     max = 10, value = 5)),
+                                      conditionalPanel(
+                                        condition = "input.test == 'Shared Targets'",
+                                        uiOutput("TFselectAn")),
+                                      
+                                      uiOutput("TestInput"),
+                                      uiOutput("CondselectAn"),
+                                      
+                                      selectInput("val1", "Select Gene list",c("All Genes","Only Yeast8"), selected="All Genes", selectize=TRUE),
+                                      textInput("goterm", "Select GO-term filtering", value="Amino acid"),
+                                      h6("To include more GO-terms add + inbetween."),
+                                      
                                       
                                       actionButton("search", "Search"),
                                       h4(" "),
-                                      uiOutput("TestInput"),
-                                      h4("The selected GO-terms from search result"),
+                                      
+                                      uiOutput("GOSharedTargets"),
                                       dataTableOutput("goterms"),
                                       uiOutput("StatDown"),
                                       downloadButton("downloadStatData", "Download")
@@ -160,17 +169,17 @@ fluidPage(
                          
                          mainPanel(
                            fluidRow(
-                             column(width = 12, 
-                                    column(width=6,
+                             column(width = 10, 
+                                    
                                            uiOutput("plots.analysis")
-                                          )))
+                                          ))
                          )
                        )),
               
               tabPanel("Include data set",
                        mainPanel(
                          h3("Includa a new dataset for analysis"),
-                         # shinyDirButton('directory2', 'Folder select', 'Please select a folder'),
+                         textInput("New_TF","Name TF"),
                          fileInput('files', 'Please select all files to upload', multiple = TRUE),
                          actionButton('submit1', label = "Submit"),
                          h3("Data status"),
