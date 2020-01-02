@@ -138,6 +138,7 @@ fluidPage(
                        sidebarLayout(
                          sidebarPanel(width=3,
                                       h3("Dataset"),
+                                      selectInput("Datasetval","Dataset",c("Peaks","SNR"), selected="Peaks", selectize=TRUE),
                                       h5("This analysis is based on peak identification"),
                                       selectInput("test", "Test",c("Fisher","Heatmap","Network","Cluster","Linear Model","Shared Targets"), selected="Fisher", selectize=TRUE),
                                       

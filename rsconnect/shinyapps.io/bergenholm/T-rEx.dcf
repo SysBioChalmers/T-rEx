@@ -1,0 +1,13 @@
+name: T-rEx
+title: T-rEx
+username:
+account: bergenholm
+server: shinyapps.io
+hostUrl: https://api.shinyapps.io/v1
+appId: 1438205
+bundleId: 2701756
+url: https://bergenholm.shinyapps.io/T-rEx/
+when: 1577956816.97695
+asMultiple: FALSE
+asStatic: FALSE
+ignoredFiles: README.md|T-rEx Documentation.docx

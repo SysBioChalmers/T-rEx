@@ -8,7 +8,7 @@
 #Set up the TFs, colors and the conditions used
 name.TF<-c("Abf1","Cat8","Cbf1","Cst6","Ert1","Gcn4","Gcr1","Gcr2","Hap1","Hap4","Ino2","Ino4","Leu3","Mcm1","Oaf1","Pip2","Rap1","Rds2","Reb1","Rgt1","Rtg1","Rtg3","Sip4","Stb5","Sut1","Tye7")
 #For each new TF added a new color must be set and added in rinputs
-myColors.TF<-c("#a6cee3","#1f78b4","#244282","#ff9c63","#e2df9a","#f16913","#b2df8a","#ffe60c","#33a02c","#3b5998" ,"#fe7f10","#3c2918","#3ab4f4","#5200aa","#e31a1c","#fdbf6f","#ff7f00","#115e0c","#cab2d6","#7fcdbb","#d5dc8a","#6a3d9a","#b0b227","#e20002","#dd3497","#b15928")
+myColors.TF<-c("#a6cee3","#1f78b4","#244282","#ff9c63","#f16913","#e2df9a","#b2df8a","#ffe60c","#33a02c","#3b5998" ,"#fe7f10","#3c2918","#3ab4f4","#5200aa","#e31a1c","#fdbf6f","#ff7f00","#115e0c","#cab2d6","#7fcdbb","#d5dc8a","#6a3d9a","#b0b227","#e20002","#dd3497","#b15928")
 name.Cond<-c("Glu","Nit","Eth","Ana","Ypd")
 colorset.TF<-as.character(t(myColors.TF))
 names(colorset.TF)<-as.character(t(name.TF))
@@ -156,15 +156,19 @@ read_dist_func<-function(input.TF, condition){
 }
 
 
-Stat_plot_func<-function(val1,downloadVal,conditionname,goterm,name.TF,Test,New.TF,nclu){
+Stat_plot_func<-function(val1,downloadVal,conditionname,goterm,name.TF,Test,New.TF,nclu,Datasetval){
   GOterm.name<-unlist(strsplit(tolower(goterm), "[+]"))
   GOterm.Data<-goterm_func(GOterm.name)
   totalgenes<-nrow(GOterm.Data)
   ####The data
-
+if(Datasetval=="Peaks"){
   Stat.Data<-Stat_data_func(name.TF,conditionname,New.TF$Targets)
+}else{
+  Stat.Data<-Stat_data_funcSNR(name.TF,conditionname,New.TF$Targets)
+}
+ 
   Stat.GOterm.data<-data_func(Stat.Data,conditionname,GOterm.Data,val1)
-  Treated.Data<-data_treatment_func(Stat.GOterm.data$data1, conditionname,name.TF)
+  Treated.Data<-data_treatment_func(Stat.GOterm.data$data1, conditionname,name.TF,Datasetval)
   txtstr<-paste( "Selected genes", nrow(Treated.Data$x),"of total",totalgenes)
   data<-cbind(Treated.Data$y,Treated.Data$x)
   ###Fisher
@@ -178,7 +182,7 @@ Stat_plot_func<-function(val1,downloadVal,conditionname,goterm,name.TF,Test,New.
     
   }
   if(Test=="Network"){
-    p1<-net_func(Treated.Data$x, txtstr)
+    p1<-net_func(Treated.Data$x, txtstr,downloadVal)
     
   }
   if(Test=="Cluster"){
@@ -204,6 +208,36 @@ goterm_func <- function(datain) {
   return(pathways.gene)
 }
 #Generate data for statistical analysis 
+Stat_data_funcSNR<-function(tf,cond,data.New.TF) {
+  data_out<-geneList
+  for (i in tf){
+    if(i=="New_TF"){
+      datafile<-data.New.TFSNR
+      condTF<-datafile[names(datafile) == cond] 
+      datafile.2<-data.frame(datafile$X,condTF)
+      colnames(datafile.2)<-c("GeneC",i)
+      data_out<-merge(data_out,datafile.2, by="GeneC", all=TRUE)
+    }else{
+      name<-list.files(path="TF_data_files/Data/",pattern=paste(i,"_geneTargetListSNR_(.*).csv$",sep=""))
+      datafile <-tryCatch({read.csv(paste0("TF_data_files/Data/",name),sep=",")},
+                          error=function(file){
+                            dummyvec<-data.frame(t(rep(NA, (length(name.Cond)+1))))
+                            colnames(dummyvec)<-c("X",name.Cond)
+                            return(dummyvec) },silent = TRUE)
+      if( !any(names(datafile)==cond)){
+        dummyvec<-data.frame(t(rep(NA, (length(name.Cond)+1))))
+        colnames(dummyvec)<-c("X",name.Cond)
+        datafile<-dummyvec
+      }
+      condTF<-datafile[names(datafile) == cond] 
+      datafile.2<-data.frame(datafile$X,condTF)
+      colnames(datafile.2)<-c("GeneC",i)
+      data_out<-merge(data_out,datafile.2, by="GeneC", all=TRUE)
+    }}
+  return(data_out)
+  
+}
+
 Stat_data_func<-function(tf,cond,data.New.TF) {
   data_out<-geneList
   for (i in tf){
@@ -246,7 +280,7 @@ data_func<- function(Stat.Data,datain,pathway.val,val1) {
   if(is.null(data1)){data1<-c("Gene"="empty")}
   return(list("data1"=data1))
 }
-data_treatment_func <- function(data1, condname,name.TF) {
+data_treatment_func <- function(data1, condname,name.TF,Datasetval) {
 
   data1<-merge(data1, TPM.data, by="Gene")
   y1<-data1[condname]
@@ -260,6 +294,13 @@ data_treatment_func <- function(data1, condname,name.TF) {
   ####only include genes which has at least one binding 
   y1<-y1[rowSums(x1)>0]
   x1<-x1[rowSums(x1)>0,]
+  x1[is.na(x1)]<-0
+  if(Datasetval=="Peaks"){
+  }else{
+    for(i in 1:ncol(x1)){
+      x1[,i]<-x1[,i]/max(x1[,i])
+    }
+  }
   x1[is.na(x1)]<-0
   return(list("y"=y1,"x"=x1))
 }
@@ -364,7 +405,7 @@ heatmap_func<-function(datain,txtstr,outputval){
   data<-datain
   datamap<-as.matrix(data[,-1])
   datamap[is.infinite(datamap)]<-0
-  datamap[datamap>1]<-1
+  # datamap[datamap>1]<-1
   p1<-heatmap.2(datamap,col=cmap, tracecol=NA, main=txtstr)
   if(outputval==1){
     return(p1)}
@@ -375,17 +416,38 @@ heatmap_func<-function(datain,txtstr,outputval){
     out.df<-data2
     return(out.df)}
 }
-net_func<-function(datain, txtstr){
+net_func<-function(datain, txtstr, outputval){
   ####Generates the network plots
   netMatrix <- as.matrix(datain)
   rownames(netMatrix) <- rownames(datain)
   netMatrix[netMatrix>1]<-1
   netMatrix[is.na(netMatrix)] <- 0
+  if( outputval==2){
+  k=0
+    for(i in 1:ncol(netMatrix)){
+      net<-c()
+      netty<-data.frame(rownames(netMatrix),netMatrix)
+      net<-netty[netty[,i+1]==1,c(1,i+1)]
+      if(nrow(net)>0){
+        k=k+1
+      net[,3]<-colnames(netty)[i+1]
+      colnames(net)<-c("Gene","Val","TF")
+      if(k==1){
+        net2<-net
+      }else{
+        net2<-rbind(net2,net)
+      }
+      }
+    }
+    return(net2)}
+  else{
   dimnames(netMatrix) <- list(Gene = rownames(netMatrix),
                               TF = colnames(netMatrix))
   
   tfNetwork <- data.frame(netMatrix,
                           row.names = rownames(netMatrix))
+
+
   tfNetwork <- network(tfNetwork,
                        matrix.type = "bipartite",
                        ignore.eval = FALSE,
@@ -395,7 +457,7 @@ net_func<-function(datain, txtstr){
   ggnet2(tfNetwork, alpha = 0.8, color.legend="Legend",size.legend="Connections",color.palette=col,label.size=3,label.color = "#404449", node.size="cent", node.color="Legend", size="degree",size.min=1,node.label = colnames(netMatrix), layout.par = list(niter = 1000), edge.size = 0.1)+ 
     guides(size = FALSE)+
     labs(title=txtstr)+theme_void()
-  
+}
 }
 model_zero_func<-function(datain, txtstr, outputval,name.TF){
   ####Generates the linear model for the selected GO-terms
@@ -404,12 +466,10 @@ model_zero_func<-function(datain, txtstr, outputval,name.TF){
     modTF<-cbind(modTF,paste(name.TF[i],"+", sep=""))}
   modTF<-paste(modTF,collapse="")
   modTF<-substr(modTF,1,nchar(modTF)-1)
-  
-  
+
+
   colnames(datain)[colnames(datain)=="Treated.Data$y"] <- "y"
   lm.test<-lm(modTF,datain)
-  #dev.off()
-  
   mlmrsum<-summary(lm.test)
   
   lm.test.fit<-data.frame(Fitted=fitted(lm.test), y.obs=datain$y)
@@ -879,8 +939,8 @@ function(input, output) {
       if(is.null(length(start(pos.FW)))&&is.null(length(start(pos.RV))))return(null)
       if(!is.null(length(start(pos.FW)))){
         for (i in 1:length(start(pos.FW))){
-          x1[i]<-c(start(pos.FW)[i])
-          x2[i]<-c(end(pos.FW)[i])
+          x1[i]<-c(start(pos.FW)[i]-0.5)
+          x2[i]<-c(end(pos.FW)[i]+0.5)
           y1[i]<-c(1)
           y2[i]<-c(-1)
           colval[i]<-c("blue")
@@ -894,8 +954,8 @@ function(input, output) {
       colval<-c()
       if(!is.null(length(start(pos.RV)))){
         for (i in 1:length(start(pos.RV))){
-          x1[i]<-c(start(pos.RV)[i])
-          x2[i]<-c(end(pos.RV)[i])
+          x1[i]<-c(start(pos.RV)[i]-0.5)
+          x2[i]<-c(end(pos.RV)[i]+0.5)
           y1[i]<-c(1)
           y2[i]<-c(-1)
           colval[i]<-c("red")
@@ -1318,7 +1378,7 @@ function(input, output) {
       plotnameAn <- paste("plotAn", my_i, sep="")
       output[[plotnameAn]] <- renderPlot({
         downloadVal=1
-        p1<-tryCatch({Stat_plot_func(rGenelist(),downloadVal,name.Cond[my_i],rGOterm(),rname.TF(),rTest(),rdata.New.TF(),input$slider1)},
+        p1<-tryCatch({Stat_plot_func(rGenelist(),downloadVal,name.Cond[my_i],rGOterm(),rname.TF(),rTest(),rdata.New.TF(),input$slider1,input$Datasetval)},
                                error=function(analysis){
                                  return(ggplot()+theme_void()+geom_text(aes(x=1,y=1,label="Not enough genes selected to do statistical function",hjust=(0.4) ),size=5))}
         )
@@ -1352,7 +1412,8 @@ function(input, output) {
       paste(input$TFs, "_SumPeaks.csv", sep = "")
     },
     content = function(file) {
-      file.name<-list.files(path="TF_data_files//",pattern=paste(input$TFs,"(.*)_geneTargetList_(.*).csv$",sep=""))
+      file.name<-list.files(path="TF_data_files/Data/",pattern=paste(input$TFs,"_geneTargetList_(.*).csv$",sep=""))
+      # file.name<-list.files(path="TF_data_files//",pattern=paste(input$TFs,"(.*)_geneTargetList_(.*).csv$",sep=""))
       out<-read.csv(paste("TF_data_files/Data/",file.name,sep=""),sep=",")
       write.csv(out, file, row.names = FALSE)
     }
@@ -1370,7 +1431,7 @@ function(input, output) {
   )
   rdowloadStatData<-reactive({
     downloadVal=2
-    out.data<-Stat_plot_func(rGenelist(),downloadVal,input$StatData,rGOterm(),rname.TF(),rTest(),rdata.New.TF(),input$slider1)
+    out.data<-Stat_plot_func(rGenelist(),downloadVal,input$StatData,rGOterm(),rname.TF(),rTest(),rdata.New.TF(),input$slider1,input$Datasetval)
     return(out.data)
   })
   output$downloadStatData <- downloadHandler(
