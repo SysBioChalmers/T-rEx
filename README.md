@@ -58,7 +58,8 @@ This page allows the user to interact directly with the transcription factor bin
 This page allows the user to do statistical testing of the transcription factors included in the toolbox.
       
   ### DATASET
-
+  The Peaks dataset uses all identified peaks for any given transcription factor on any given promoter
+  The SNR dataset uses all reads for any given transcription factor on any given promoter
   ### SELECT CONDITION
   allows the user to select one or more conditions.
 
@@ -70,6 +71,10 @@ This page allows the user to do statistical testing of the transcription factors
 
   ### TEST
   User selected statistical test to be used on the selected GO-term.
+  
+  ### SHARED TARGETS
+  
+  Here the user can see the overlapping targets between transcription factors
   
   * Press Search
   
