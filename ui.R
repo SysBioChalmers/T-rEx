@@ -52,7 +52,8 @@ fluidPage(
                                 h4(tags$em("S. cerevisiae")," Transcription factor Explorer"),
                                 h6("David Bergenholm, Christoph Börlin, Petter Holland, & Jens Nielsen"),
                              
-                                a("GitHub link", href="https://github.com/SysBioChalmers/T-rEx"),
+                                a("GitHub link", href="https://github.com/SysBioChalmers/T-rEx", target="_blank"),
+                                h6("https://github.com/SysBioChalmers/T-rEx"),
                                 imageOutput("sctrex",height=120) %>% withSpinner(color="#0dc5c1")
                                 
                   
